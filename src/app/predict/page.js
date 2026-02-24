@@ -1,0 +1,258 @@
+
+"use client";
+
+import { useState, useEffect } from "react";
+import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
+import Searchm from "../components/Searchm";
+import Loader from "../components/Loader";
+import { User, Film, AlertCircle } from "lucide-react";
+
+export default function MovieRecommender() {
+  const [recommendations, setRecommendations] = useState([]);
+  const [posterMap, setPosterMap] = useState({}); // Map movie title to poster URL
+  const [movieList, setMovieList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Fetch initial movie list for suggestions
+  useEffect(() => {
+    async function fetchMovieList() {
+      try {
+        const response = await fetch("/api/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ movie_title: "Avatar" }), 
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.movies_list) {
+            setMovieList(data.movies_list);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch movie list:", err);
+      }
+    }
+    fetchMovieList();
+  }, []);
+
+  const fetchPoster = async (movieName) => {
+    if (posterMap[movieName]) return; // Already fetched
+
+    try {
+      const response = await fetch("/api/poster", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ movie_title: movieName }),
+      });
+
+      if (response.ok) {
+        const url = await response.json();
+        setPosterMap((prev) => ({ ...prev, [movieName]: url }));
+      }
+    } catch (err) {
+      console.error(`Error fetching poster for ${movieName}`, err);
+    }
+  };
+
+  const handleSearch = async (term) => {
+    if (!term) return;
+
+    setIsLoading(true);
+    setError(null);
+    setRecommendations([]);
+
+    try {
+      const payload = { movie_title: term };
+
+      const response = await fetch("/api/predict", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      setRecommendations(data.recommendations || []);
+
+      // Fetch posters for recommendations
+      if (data.recommendations) {
+        data.recommendations.forEach((movie) => fetchPoster(movie));
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  const [initialSearch, setInitialSearch] = useState("");
+  const [particles, setParticles] = useState([]);
+
+  // Generate particles on client-side only to avoid hydration mismatch
+  useEffect(() => {
+    setParticles(
+      [...Array(20)].map(() => ({
+        initialY: Math.random() * 1000,
+        animateY: [Math.random() * 1000, Math.random() * -100],
+        duration: 10 + Math.random() * 20,
+        delay: Math.random() * 10,
+        width:  Math.random() * 10 + 1,
+        // height:  auto,
+        left: Math.random() * 100,
+      }))
+    );
+  }, []);
+
+  // Handle URL query for search
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const search = params.get("search");
+      if (search) {
+        setInitialSearch(search);
+        handleSearch(search);
+      }
+    }
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-transparent text-gray-200 p-6 md:p-12 font-sans overflow-hidden relative">
+      {/* Background Blobs */}
+      <div className="fixed inset-0 w-full h-full -z-10 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/30 rounded-full blur-[100px] mix-blend-screen animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/30 rounded-full blur-[100px] mix-blend-screen animate-pulse delay-700" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-cyan-600/20 rounded-full blur-[120px] mix-blend-screen animate-pulse delay-1000" />
+        
+        <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-150 contrast-150 mix-blend-overlay"></div>
+        {/* Floating Particles */}
+        {particles.map((p, i) => (
+          <motion.div
+            key={i}
+            initial={{ opacity: 1, y: p.initialY }}
+            animate={{ 
+              opacity: [0 , 0.5 , 0], 
+              y: p.animateY 
+            }}
+            transition={{ 
+              duration: p.duration, 
+              repeat: Infinity, 
+              delay: p.delay,
+              ease: "linear" 
+            }}
+            className="absolute rounded-full bg-blue-600 mix-blend-multiply inset-0 blur-[1px]"
+            style={{
+              width: p.width,
+              height: p.width  ,
+              left: `${p.left}%`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="max-w-7xl mx-auto space-y-12 relative z-10">
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center space-y-4"
+        >
+          <h1 className="text-4xl md:text-6xl font-bold text-white tracking-tight">
+            AI <span className="text-blue-500">Recommendations</span>
+          </h1>
+          <p className="text-slate-400 max-w-2xl mx-auto text-lg">
+            Find your next cinematic masterpiece using our advanced filtering engine.
+          </p>
+        </motion.div>
+
+        {/* Controls Section */}
+        <div className="glass-panel p-8 max-w-2xl mx-auto backdrop-blur-md bg-white/5 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden">
+          {/* Animated decorative line */}
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-70 animate-pulse" />
+          
+          <div className="relative z-10">
+            <Searchm data={movieList} onSearch={handleSearch} defaultValue={initialSearch} />
+          </div>
+          
+          {/* Subtle background glow */}
+          <div className="absolute -inset-10 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+        </div>
+
+        {/* Error Message */}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="max-w-3xl mx-auto bg-red-900/20 border border-red-500/50 text-red-200 p-4 rounded-xl flex items-center gap-3"
+            >
+              <AlertCircle className="w-5 h-5 flex-shrink-0" />
+              <p>{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Loading State */}
+        {isLoading && <Loader />}
+
+        {/* Results Grid */}
+        {recommendations.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-6"
+          >
+            <h2 className="text-2xl font-semibold text-white pl-4 border-l-4 border-blue-600 mb-8">
+              Top Picks For You
+            </h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+              {recommendations.map((movie, index) => (
+                <motion.div
+                  key={`${movie}-${index}`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                  className="group relative aspect-[2/3] bg-slate-900 rounded-xl overflow-hidden cursor-pointer shadow-lg border border-slate-800 hover:border-blue-500/50 hover:shadow-blue-900/20 transition-all duration-300"
+                >
+                  {posterMap[movie] ? (
+                    <Image
+                      src={posterMap[movie]}
+                      alt={movie}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      unoptimized 
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center bg-gray-800 text-gray-500">
+                      <span className="text-4xl opacity-20"><Film /></span>
+                    </div>
+                  )}
+                  
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/80 to-transparent opacity-100 transition-all duration-300 flex flex-col justify-end p-4">
+                    <h3 className="text-white font-bold leading-tight drop-shadow-lg">
+                      {movie}
+                    </h3>
+                    <div className="h-0.5 w-0 group-hover:w-full bg-blue-500 transition-all duration-300 mt-2 mb-1"></div>
+                    <p className="text-blue-400 text-xs font-medium tracking-wider uppercase opacity-80 group-hover:opacity-100 transition-opacity">
+                      Recommended
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+}
+
