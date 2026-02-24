@@ -9,7 +9,7 @@ export async function POST(request) {
       mode: 'text',
       pythonPath: 'python', // Use 'python' on Windows
       scriptPath: path.join(process.cwd(), 'pyth'),
-      args: inputData,
+      args: [inputData], // Wrap in array for correct argument passing
       timeout: 5000
     };
     console.log('Input data:', inputData);
@@ -21,9 +21,9 @@ export async function POST(request) {
     const output = await new Promise((resolve, reject) => {
       const pyshell = new PythonShell('predict.py', pythonOptions);
       
-      // Send input
-      pyshell.send(inputData);
-      pyshell.end();
+      // No need to send via stdin if reading from argv
+      // pyshell.send(inputData); 
+      // pyshell.end();
       
       let result = [];
       

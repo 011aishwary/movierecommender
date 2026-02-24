@@ -93,7 +93,7 @@ export default function Searchm({ data = [], onSearch, defaultValue = "" }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute top-16 left-0 right-0 py-2 bg-[#020617] border border-slate-700 rounded-2xl shadow-xl z-50 overflow-hidden"
+            className="absolute top-full left-0 right-0 mt-2 py-2 bg-[#020617] border border-slate-700 rounded-2xl shadow-xl z-[100] max-h-60 overflow-y-auto"
           >
             {suggestions.map((suggestion, index) => (
               <motion.li

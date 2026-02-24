@@ -8,11 +8,18 @@ import pandas as pd
 
 
 movies_dict = joblib.load('model/movie_df.pkl')
-similarity = joblib.load('model/similarity.pkl')
+try:
+    similarity = joblib.load('model/similarity.pkl')
+except FileNotFoundError:
+    similarity = None
+    
 movies = pd.DataFrame(movies_dict)
 movie_list = movies.title.tolist()
 
 def recommend(movie_title):
+    if similarity is None:
+        return ["Error: similarity.pkl not found. Cannot generate recommendations."]
+        
     try:
         movie_index = movies[movies['title'] == movie_title].index[0]
     except IndexError:

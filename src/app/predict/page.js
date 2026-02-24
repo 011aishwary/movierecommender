@@ -67,7 +67,7 @@ export default function MovieRecommender() {
     try {
       const payload = { movie_title: term };
 
-      const response = await fetch("/api/predict", {
+      const response = await fetch("/api/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -79,11 +79,12 @@ export default function MovieRecommender() {
       }
 
       const data = await response.json();
-      setRecommendations(data.recommendations || []);
+      console.log("Received recommendations:", data);
+      setRecommendations(data.prediction || []);
 
       // Fetch posters for recommendations
-      if (data.recommendations) {
-        data.recommendations.forEach((movie) => fetchPoster(movie));
+      if (data.prediction) {
+        data.prediction.forEach((movie) => fetchPoster(movie));
       }
     } catch (err) {
       setError(err.message);
@@ -173,16 +174,16 @@ export default function MovieRecommender() {
         </motion.div>
 
         {/* Controls Section */}
-        <div className="glass-panel p-8 max-w-2xl mx-auto backdrop-blur-md bg-white/5 rounded-2xl border border-white/10 shadow-2xl relative overflow-hidden">
+        <div className="glass-panel p-8 max-w-2xl mx-auto backdrop-blur-md bg-white/5 rounded-2xl border border-white/10 shadow-2xl relative z-50 visible">
           {/* Animated decorative line */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-70 animate-pulse" />
           
-          <div className="relative z-10">
+          <div className="relative z-50">
             <Searchm data={movieList} onSearch={handleSearch} defaultValue={initialSearch} />
           </div>
           
           {/* Subtle background glow */}
-          <div className="absolute -inset-10 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
+          <div className="absolute inset-10 bg-blue-500/10 blur-3xl rounded-full pointer-events-none" />
         </div>
 
         {/* Error Message */}
