@@ -12,7 +12,6 @@ export async function POST(request) {
       args: [inputData], // Wrap in array for correct argument passing
       timeout: 5000
     };
-    console.log('Input data:', inputData);
 
     // Test with a fixed input
     // const inputData = JSON.stringify("Avatar");
@@ -42,8 +41,6 @@ export async function POST(request) {
     const parsed = JSON.parse(output);
 
 // Print recommendations to Node console
-    console.log('Recommended movies:', parsed.recommendations);
-    // console.log('PythonShell movies :',parsed.movies_list);
 
     return new Response(output, {
       status: 200,

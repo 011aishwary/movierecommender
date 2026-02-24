@@ -79,7 +79,6 @@ export default function MovieRecommender() {
       }
 
       const data = await response.json();
-      console.log("Received recommendations:", data);
       setRecommendations(data.prediction || []);
 
       // Fetch posters for recommendations
