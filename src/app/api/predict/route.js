@@ -8,7 +8,7 @@ export async function POST(request) {
     const pythonOptions = {
       mode: 'text',
       pythonPath: 'python', // Use 'python' on Windows
-      scriptPath: path.join(process.cwd(), 'pyth'),
+      scriptPath: path.join(process.cwd(), 'src/app/api'),
       args: [inputData], // Wrap in array for correct argument passing
       timeout: 5000
     };
